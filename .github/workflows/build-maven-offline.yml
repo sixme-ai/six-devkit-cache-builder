@@ -2,6 +2,13 @@ name: Build public Maven offline dependency bundle
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-maven-offline.yml
+      - pom.xml
+      - scripts/build-cache.sh
 
 permissions:
   contents: read
