@@ -7,11 +7,6 @@ on:
       - main
     paths:
       - .github/workflows/build-maven-offline.yml
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/build-maven-offline.yml
       - pom.xml
       - scripts/build-cache.sh
 
