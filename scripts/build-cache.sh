@@ -74,12 +74,12 @@ printf '\n== Exercising Checkstyle, PMD, CPD and SpotBugs ==\n'
 mvn_seed -P"$P" checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs
 
 printf '\n== Exercising Flyway Maven plugin without database connectivity ==\n'
-mvn_seed org.flywaydb:flyway-maven-plugin:13.6.0:help -Ddetail=false
+mvn_seed org.apache.maven.plugins:maven-help-plugin:3.5.1:describe -Dplugin=org.flywaydb:flyway-maven-plugin:13.6.0 -Dgoal=migrate -Ddetail=false
 
 printf '\n== Verifying the same operations in Maven offline mode ==\n'
 mvn_seed -o -P"$P" clean verify
 mvn_seed -o -P"$P" checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs
-mvn_seed -o org.flywaydb:flyway-maven-plugin:13.6.0:help -Ddetail=false
+mvn_seed -o org.apache.maven.plugins:maven-help-plugin:3.5.1:describe -Dplugin=org.flywaydb:flyway-maven-plugin:13.6.0 -Dgoal=migrate -Ddetail=false
 
 find "$REPOSITORY" -name '*.lastUpdated' -type f -delete
 BUNDLE="$DIST/six-aquifer-maven-repository-offline.tar.gz"
