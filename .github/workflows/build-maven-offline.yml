@@ -1,0 +1,44 @@
+name: Build public Maven offline dependency bundle
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-public-offline-bundle
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Maven dependency download and offline smoke tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: maven:3.9.16-eclipse-temurin-25
+    steps:
+      - name: Checkout only this public cache-builder repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check Java and Maven toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          mvn -version
+
+      - name: Resolve all public dependencies and verify offline
+        shell: bash
+        run: bash scripts/build-cache.sh
+
+      - name: Publish public dependency bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: six-aquifer-maven-offline
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
