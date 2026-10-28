@@ -39,7 +39,7 @@ jobs:
 
       - name: Resolve all public dependencies and verify offline
         shell: bash
-        run: bash scripts/build-cache.sh
+        run: bash scripts/build-six-github-cache.sh
 
       - name: Publish public dependency bundle
         uses: actions/upload-artifact@v4
