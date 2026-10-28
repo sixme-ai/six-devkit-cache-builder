@@ -22,3 +22,11 @@ O workflow executa testes sintéticos online e, depois, em modo Maven offline (-
 - Artefatos de workflows em repositórios públicos podem ser acessíveis publicamente.
 - Gatilho manual apenas, sem execução em PRs externos.
 - O Chess poderá ser incorporado ao manifesto posteriormente, reutilizando a mesma árvore Maven onde versões e coordenadas coincidirem.
+
+## Pacote isolado `six-github-maven-offline`
+
+O workflow `Build six-github Maven offline dependency bundle` produz um ZIP independente para o DevKit offline, preservando o pacote Aquifer existente.
+
+A base `pom-six-github.xml` é um manifesto **sintético público**: inclui as coordenadas de JUnit, Testcontainers PostgreSQL, JDBC e plugins de build observadas no POM da branch `agente/andreia` do Six Chess, além de Spring Boot, Spring AI, Flyway, JaCoCo e quality tools já presentes neste builder. Não publica POM privado, fontes ou segredos.
+
+O workflow executa resolução online e testes Maven reais (incluindo verificação subsequente em modo offline); o sucesso não comprova testes funcionais nos repositórios privados, Docker ou PostgreSQL. O artefato tem validade de 7 dias e seu SHA-256 precisa ser validado antes de integrar o DevKit.
