@@ -90,6 +90,24 @@ test -s "$REPOSITORY/org/postgresql/postgresql/42.7.13/postgresql-42.7.13.jar" |
   echo 'ERROR: Chess PostgreSQL JDBC dependency missing from offline cache.' >&2
   exit 3
 }
+# Exercise the actual Spring Boot-managed Maven plugin versions used by six-github.
+# The Chess synthetic POM above explicitly pins Surefire/Failsafe 3.6.0,
+# while Spring Boot 4.1.1 manages 3.5.6 when the private project leaves them unpinned.
+COMPAT="$TEMP_BASE/six-github-compat"
+mkdir -p "$COMPAT"
+cp "$ROOT/pom-six-github-compat.xml" "$COMPAT/pom.xml"
+cp -R "$WORKSPACE/src" "$COMPAT/src"
+printf '\n== Six GitHub compatibility: Spring Boot-managed Surefire/Failsafe 3.5.6 online ==\n'
+(cd "$COMPAT" && mvn_seed -U -Pci-coverage clean verify)
+printf '\n== Six GitHub compatibility: Surefire/Failsafe 3.5.6 offline ==\n'
+(cd "$COMPAT" && mvn_seed -o -Pci-coverage clean verify)
+for plugin in maven-failsafe-plugin maven-surefire-plugin; do
+  for version in 3.5.6 3.6.0; do
+    test -s "$REPOSITORY/org/apache/maven/plugins/$plugin/$version/$plugin-$version.jar" || {
+      echo "ERROR: missing $plugin:$version from offline bundle." >&2; exit 3;
+    }
+  done
+done
 find "$REPOSITORY" -name '*.lastUpdated' -type f -delete
 BUNDLE="$DIST/six-github-maven-repository-offline.tar.gz"
 tar -czf "$BUNDLE" -C "$TEMP_BASE" maven-repository
