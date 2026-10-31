@@ -1,0 +1,78 @@
+name: Build Pocket ID portable offline runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-pocket-id-offline.yml
+      - scripts/build-pocket-id-offline.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-pocket-id-offline-runtime
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Verify upstream binary and test local offline OIDC
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout public DevKit Builder only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Package official Pocket ID and perform localhost smoke tests
+        shell: bash
+        run: bash scripts/build-pocket-id-offline.sh
+
+      - name: Upload portable bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocket-id-offline-linux-amd64
+          path: dist/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish Pocket ID offline ZIP as direct-download Release
+    needs: prepare
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pocket-id-offline-linux-amd64
+          path: dist
+
+      - name: Verify the published ZIP before release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c pocket-id-offline-linux-amd64-v2.19.1.zip.sha256
+          unzip -t pocket-id-offline-linux-amd64-v2.19.1.zip
+          test -s pocket-id-offline-linux-amd64-v2.19.1.zip
+
+      - name: Publish direct-download public ZIP
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "offline-pocket-id-$GITHUB_RUN_ID" \
+            dist/pocket-id-offline-linux-amd64-v2.19.1.zip \
+            dist/pocket-id-offline-linux-amd64-v2.19.1.zip.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Pocket ID 2.19.1 - portable offline Linux amd64" \
+            --notes "Binary redistributable under BSD-2-Clause from pocket-id/pocket-id v2.19.1. Official binary SHA256 fbe58b3af6e225600136c7da033810d2d86436fbd13a135fa52205f467544436. Zip contains official binary, original license, launcher, hash, and offline usage instructions. No project code or credentials. Public runner performs real startup/discovery/JWKS smoke checks. Agents in an air-gapped terminal must first receive the ZIP through an allowed file transfer (e.g. Drive)." \
+            --latest=false

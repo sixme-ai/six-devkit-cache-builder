@@ -1,6 +1,6 @@
 # Six DevKit — public Maven offline dependency builder
 
-Public build-only repository. The workflows contain **only Maven coordinates and versions** plus synthetic JUnit smoke tests: **no private project checkout, source code, business rules, configuration files, credentials, URLs or internal API schemas**.
+Public build-only repository. The Maven workflows contain **public coordinates, versions and synthetic JUnit tests**; the separate Pocket ID workflow bundles its **public upstream open-source binary**. No private project checkout, application source, business rules, credentials, internal API schemas or project secrets.
 
 ## Independent GitHub Actions
 
@@ -32,3 +32,7 @@ A green workflow proves only **public dependency resolution and synthetic online
 ### Backward compatibility
 
 `pom-six-github-compat.xml` is an archived synthetic compatibility seed, **not used by any current workflow**. Keep it for historical comparison; do not use it to generate new GitHub MCP bundles.
+
+## Optional offline Pocket ID for agent terminals
+
+The independent `Build Pocket ID portable offline runtime` Action downloads the **official Linux amd64 v2.19.1 binary** (pinned SHA-256), includes BSD-2-Clause license, a `localhost` launcher and OIDC/JWKS validation script, and publishes a public direct-download ZIP. No Docker, database server, toolchain or internet is needed **after this ZIP is transferred into the terminal**. The runner verifies real startup and localhost discovery/JWKS. Secrets and SQLite state are generated only in each local agent environment; never copy them into the public ZIP. Use an authorized transfer such as Google Drive to import the ZIP into an air-gapped agent terminal. Browser passkeys require a same-host browser on localhost or HTTPS; headless OAuth machine tests can use explicitly granted `client_credentials`. This is an optional isolated test IdP, **not** the real remote QA stage.
