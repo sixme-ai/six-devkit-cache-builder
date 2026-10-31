@@ -49,3 +49,44 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
+
+  release:
+    name: Verify and publish directly downloadable ZIP
+    needs: prepare
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Retrieve only this project's finished dependency bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: six-github-maven-offline
+          path: dist
+
+      - name: Verify the Maven tarball and package public ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -c six-github-maven-repository-offline.tar.gz.sha256
+          test -s manifest.txt
+          zip -q -0 -j "$RUNNER_TEMP/six-github-maven-offline.zip" \
+            "six-github-maven-repository-offline.tar.gz" \
+            "six-github-maven-repository-offline.tar.gz.sha256" \
+            manifest.txt
+          unzip -t "$RUNNER_TEMP/six-github-maven-offline.zip"
+
+      - name: Publish a public direct-download GitHub Release asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="offline-github-mcp-${GITHUB_RUN_ID}"
+          gh release create "$TAG" "$RUNNER_TEMP/six-github-maven-offline.zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "GitHub MCP Maven offline - run ${GITHUB_RUN_ID}" \
+            --notes "Public synthetic Maven dependencies only. Source commit: ${GITHUB_SHA}; Actions run: ${GITHUB_RUN_ID}. Verify the included tarball SHA-256 before installing. This is not an application functionality test." \
+            --latest=false
