@@ -70,7 +70,7 @@ trap 'rm -rf "$VERIFY_DIR"' EXIT
 (cd "$DIST" && sha256sum -c "$(basename "$BUNDLE").sha256")
 tar -xzf "$BUNDLE" -C "$VERIFY_DIR"
 test -d "$VERIFY_DIR/maven-repository"
-test -s "$VERIFY_DIR/maven-repository/org/apache/maven/plugins/maven-compiler-plugin/"*"/maven-compiler-plugin-"*".jar"
+find "$VERIFY_DIR/maven-repository/org/apache/maven/plugins/maven-compiler-plugin" -type f -name 'maven-compiler-plugin-*.jar' -print -quit | grep -q .
 (
   cd "$WORKSPACE"
   mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" $PROFILES clean verify
