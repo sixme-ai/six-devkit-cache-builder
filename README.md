@@ -10,6 +10,8 @@ Public build-only repository. The workflows contain **only Maven coordinates and
 | GitHub MCP | `Build GitHub MCP Maven offline dependency bundle` | `pom-six-github.xml` | `scripts/build-six-github-cache.sh` | `six-github-maven-offline` |
 | Chess | `Build Chess Maven offline dependency bundle` | `pom-six-chess.xml` | `scripts/build-six-chess-cache.sh` | `six-chess-maven-offline` |
 
+**Self-sufficiency invariant:** every project's seed must include **its full own dependency and plugin graph, even if the same artifacts appear in the other bundles**. Repeated dependencies are deliberately shipped again in each ZIP; no cross-bundle deduplication or installation order is allowed. The build extracts the finished tarball into a fresh repository and re-executes Maven `-o` from that extracted repository. The baseline is the project's actual POM, not the dependencies of another project. A public synthetic seed verifies only its declared coordinates; private-project build tests remain a separate requirement.
+
 Each workflow is **independent** and has its own `workflow_dispatch`, push-path filters, concurrency group, synthetic seed, Maven repository archive, SHA-256, manifest and artifact name. Updating one project's POM/script triggers **only its Action**. Updating the Aquifer workflow itself affects Aquifer only.
 
 ### Versions and scope

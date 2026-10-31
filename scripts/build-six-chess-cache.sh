@@ -60,4 +60,22 @@ private_project_compilation=NOT_TESTED
 external_integrations=NOT_TESTED
 no_private_source_or_business_logic=TRUE
 EOF
+
+# VERIFY_EXTRACTED_MAVEN_CACHE: no other project's cache, ~/.m2 or build workspace is trusted.
+# Extract the ACTUAL outgoing archive and re-run all synthetic project gates
+# against the exclusively extracted repository. A missing transitive/plugin
+# dependency must fail the build before artifact publication.
+VERIFY_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/maven-offline-verify-XXXXXXXX")"
+trap 'rm -rf "$VERIFY_DIR"' EXIT
+(cd "$DIST" && sha256sum -c "$(basename "$BUNDLE").sha256")
+tar -xzf "$BUNDLE" -C "$VERIFY_DIR"
+test -d "$VERIFY_DIR/maven-repository"
+test -s "$VERIFY_DIR/maven-repository/org/apache/maven/plugins/maven-compiler-plugin/"*"/maven-compiler-plugin-"*".jar"
+(
+  cd "$WORKSPACE"
+  mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" $PROFILES clean verify
+  mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" $PROFILES dependency:tree
+  : # Chess has no Checkstyle, PMD or SpotBugs plugin in its own POM.
+)
+
 echo "Created $BUNDLE"

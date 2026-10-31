@@ -98,4 +98,22 @@ offline_seed_verification=PASS
 private_project_compilation=NOT_TESTED
 postgresql_integration_tests=NOT_TESTED
 EOF
+
+# VERIFY_EXTRACTED_MAVEN_CACHE: no other project's cache, ~/.m2 or build workspace is trusted.
+# Extract the ACTUAL outgoing archive and re-run all synthetic project gates
+# against the exclusively extracted repository. A missing transitive/plugin
+# dependency must fail the build before artifact publication.
+VERIFY_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/maven-offline-verify-XXXXXXXX")"
+trap 'rm -rf "$VERIFY_DIR"' EXIT
+(cd "$DIST" && sha256sum -c "$(basename "$BUNDLE").sha256")
+tar -xzf "$BUNDLE" -C "$VERIFY_DIR"
+test -d "$VERIFY_DIR/maven-repository"
+test -s "$VERIFY_DIR/maven-repository/org/apache/maven/plugins/maven-compiler-plugin/"*"/maven-compiler-plugin-"*".jar"
+(
+  cd "$WORKSPACE"
+  mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" -P"$P" clean verify
+  mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" -P"$P" dependency:tree
+  mvn -B -ntp -o "-Dmaven.repo.local=$VERIFY_DIR/maven-repository" -P"$P" checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs
+)
+
 printf '\nCreated %s\n' "$BUNDLE"
