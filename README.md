@@ -19,7 +19,7 @@ Each workflow is **independent** and has its own `workflow_dispatch`, push-path 
 - Toolchain: Java 25; Maven 3.9.16.
 - Aquifer: its existing public synthetic Spring Boot 4.1.1 / Spring AI 2.0.1 / Flyway 13.6.0 seed, left unchanged.
 - GitHub MCP: Spring Boot 4.1.1, Spring AI 2.0.1, Spring MVC/Tomcat, Spring AI MCP SDK + explicit servlet library, Spring Security, OAuth2 Resource Server and JOSE/JWT; JUnit 6.1.2, JaCoCo 0.8.15, Checkstyle, PMD, SpotBugs. **No automatic `spring-ai-starter-mcp-server-webmvc` transport**. No Chess/PostgreSQL seed dependencies.
-- Chess: JUnit 6.1.2, Testcontainers PostgreSQL 2.0.5, PostgreSQL JDBC 42.7.13, compiler, enforcer, Surefire/Failsafe. **No Spring AI / OAuth / Aquifer dependencies**.
+- Chess: all public dependencies from supported Chess POMs (sprint-3 and sprint-4): JUnit 6.1.2, Testcontainers PostgreSQL 2.0.5, PostgreSQL JDBC 42.7.13, Jackson Annotations 2.22 (test), compiler, resources 3.5.0, enforcer, Surefire/Failsafe. Artifacts repeated in other projects are still bundled independently here. **No Spring AI / OAuth / Aquifer dependencies** unless required by a Chess POM.
 
 ## Build and download
 

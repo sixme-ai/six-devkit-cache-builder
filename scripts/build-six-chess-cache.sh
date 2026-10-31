@@ -22,7 +22,13 @@ package dev.offline.cache;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 class OfflineCacheTest {
+  @com.fasterxml.jackson.annotation.JsonProperty("public-seed")
+  public String annotated() { return "public-seed"; }
   @Test void checksJUnit() { assertEquals(4, Seed.twice(2)); }
+  @Test void checksJacksonAnnotations() throws NoSuchMethodException {
+    assertEquals("public-seed", getClass().getMethod("annotated")
+      .getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class).value());
+  }
 }
 JAVA
 cat > "$WORKSPACE/src/test/java/dev/offline/cache/OfflineCacheIT.java" <<'JAVA'
@@ -46,6 +52,8 @@ mvn_seed -o $PROFILES clean verify
 
 test -s "$REPOSITORY/org/testcontainers/testcontainers-postgresql/2.0.5/testcontainers-postgresql-2.0.5.jar" || { echo "Missing org/testcontainers/testcontainers-postgresql/2.0.5/testcontainers-postgresql-2.0.5.jar" >&2; exit 3; }
 test -s "$REPOSITORY/org/postgresql/postgresql/42.7.13/postgresql-42.7.13.jar" || { echo "Missing org/postgresql/postgresql/42.7.13/postgresql-42.7.13.jar" >&2; exit 3; }
+test -s "$REPOSITORY/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar" || { echo "Missing Chess jackson-annotations:2.22" >&2; exit 3; }
+test -s "$REPOSITORY/org/apache/maven/plugins/maven-resources-plugin/3.5.0/maven-resources-plugin-3.5.0.jar" || { echo "Missing Chess maven-resources-plugin:3.5.0" >&2; exit 3; }
 find "$REPOSITORY" -name '*.lastUpdated' -type f -delete
 BUNDLE="$DIST/six-chess-maven-repository-offline.tar.gz"
 tar -czf "$BUNDLE" -C "$TEMP_BASE" maven-repository
