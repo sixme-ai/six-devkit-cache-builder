@@ -55,6 +55,8 @@ JWKS=$(curl --noproxy '*' -fsS --max-time 6 "$URL/.well-known/openid-configurati
 curl --noproxy '*' -fsS --max-time 6 "$JWKS" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert len(d["keys"])>=1; print("JWKS PASS; signing keys="+str(len(d["keys"])))'
 CHECK
 chmod 755 "$BUNDLE/check-oidc.sh"
+cp scripts/agent-m2m.sh "$BUNDLE/agent-m2m.sh"
+chmod 755 "$BUNDLE/agent-m2m.sh"
 
 cat > "$BUNDLE/README.md" <<'README'
 # Pocket ID v2.19.1 — standalone offline Linux amd64
@@ -67,6 +69,7 @@ It contains no private application source, secrets, pre-created user, or shared 
 1. Extract the ZIP. Run: `cd pocket-id-offline && ./start.sh`
 2. Open `http://localhost:1411/setup` from a browser **on the same computer** for user/passkey setup (optional for admin API / client-credential tests).
 3. Run `./check-oidc.sh` in another terminal to verify OIDC issuer and JWKS over loopback.
+5. For **browserless local OAuth tokens**, run `./agent-m2m.sh provision` once, then `./agent-m2m.sh verify`. The client credentials remain private to this terminal; M2M does not replace user-login Code+PKCE.
 4. The launcher creates `.env` with **random secrets**, `chmod 600`, and a private SQLite `data` directory. Do not commit, export, share or publish these runtime files.
 
 **No internet required at runtime**. Outbound release checks, analytics and remote icon search are disabled. Loopback HTTP only. A fresh agent session can create its own independent local issuer and keys without using any cloud identity provider.
@@ -112,11 +115,13 @@ for try in $(seq 1 80); do
 done
 [[ "$READY" == 1 ]] || { echo "Pocket ID did not become ready" >&2; exit 1; }
 ( cd "$SMOKE" && ./check-oidc.sh )
+( cd "$SMOKE" && ./agent-m2m.sh provision && ./agent-m2m.sh verify )
 test -s "$SMOKE/data/pocket-id.db"
 cleanup_server
 trap 'rm -rf "$WORK"' EXIT
 # Runtime smoke data and generated secrets were never copied back into BUNDLE.
 test ! -e "$BUNDLE/.env"
+test ! -e "$BUNDLE/.agent-m2m.json"
 test ! -e "$BUNDLE/data"
 ( cd "$BUNDLE" && sha256sum -c pocket-id.sha256 )
 test -s "$BUNDLE/LICENSE.pocket-id"

@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/build-pocket-id-offline.yml
       - scripts/build-pocket-id-offline.sh
+      - scripts/agent-m2m.sh
 
 permissions:
   contents: read
