@@ -1,32 +1,32 @@
-# Six DevKit — Public Maven Offline Cache Builder
+# Six DevKit — public Maven offline dependency builder
 
-Repositório público destinado **exclusivamente** à preparação de dependências Maven abertas para o DevKit offline. Não contém código-fonte, arquivos de configuração privados, credenciais ou históricos dos projetos Aquifer e Chess.
+Public build-only repository. The workflows contain **only Maven coordinates and versions** plus synthetic JUnit smoke tests: **no private project checkout, source code, business rules, configuration files, credentials, URLs or internal API schemas**.
 
-## Versões-alvo
+## Independent GitHub Actions
 
-- Java 25 e Maven 3.9.16
-- Spring Boot 4.1.1, Spring AI 2.0.1 e Flyway 13.6.0 (sem atualizar Spring AI)
-- JUnit Jupiter 6.1.2
-- JaCoCo 0.8.15, Checkstyle (plugin 3.6.0/engine 14.3.0), PMD 3.28.0 e SpotBugs 4.10.5.0
+| Project | Workflow (Actions → Run workflow) | Public manifest | Build script | Artifact |
+| --- | --- | --- | --- | --- |
+| Aquifer | `Build Aquifer Maven offline dependency bundle` | `pom.xml` | `scripts/build-cache.sh` | `six-aquifer-maven-offline` |
+| GitHub MCP | `Build GitHub MCP Maven offline dependency bundle` | `pom-six-github.xml` | `scripts/build-six-github-cache.sh` | `six-github-maven-offline` |
+| Chess | `Build Chess Maven offline dependency bundle` | `pom-six-chess.xml` | `scripts/build-six-chess-cache.sh` | `six-chess-maven-offline` |
 
-## Geração do pacote
+Each workflow is **independent** and has its own `workflow_dispatch`, push-path filters, concurrency group, synthetic seed, Maven repository archive, SHA-256, manifest and artifact name. Updating one project's POM/script triggers **only its Action**. Updating the Aquifer workflow itself affects Aquifer only.
 
-Abra **Actions → Build public Maven offline dependency bundle → Run workflow**. Após a execução, baixe o artefato **six-aquifer-maven-offline**. Ele inclui o tarball do repositório Maven, SHA-256 e um manifesto de versões.
+### Versions and scope
 
-O workflow executa testes sintéticos online e, depois, em modo Maven offline (-o). Ele **não testa o código privado do Aquifer nem integrações PostgreSQL**; essa validação será realizada no ambiente local ao recebermos o pacote.
+- Toolchain: Java 25; Maven 3.9.16.
+- Aquifer: its existing public synthetic Spring Boot 4.1.1 / Spring AI 2.0.1 / Flyway 13.6.0 seed, left unchanged.
+- GitHub MCP: Spring Boot 4.1.1, Spring AI 2.0.1, Spring MVC/Tomcat, Spring AI MCP SDK + explicit servlet library, Spring Security, OAuth2 Resource Server and JOSE/JWT; JUnit 6.1.2, JaCoCo 0.8.15, Checkstyle, PMD, SpotBugs. **No automatic `spring-ai-starter-mcp-server-webmvc` transport**. No Chess/PostgreSQL seed dependencies.
+- Chess: JUnit 6.1.2, Testcontainers PostgreSQL 2.0.5, PostgreSQL JDBC 42.7.13, compiler, enforcer, Surefire/Failsafe. **No Spring AI / OAuth / Aquifer dependencies**.
 
-## Segurança
+## Build and download
 
-- O workflow usa somente dependências públicas e permissão `contents: read`.
-- Não transfira POMs privados, fontes, tokens, settings.xml ou URLs internas para cá.
-- Artefatos de workflows em repositórios públicos podem ser acessíveis publicamente.
-- Gatilho manual apenas, sem execução em PRs externos.
-- O Chess poderá ser incorporado ao manifesto posteriormente, reutilizando a mesma árvore Maven onde versões e coordenadas coincidirem.
+Select the **project-specific workflow** in the Actions tab, click **Run workflow** on `main`, then download **that workflow run's artifact**. A push modifying that project's manifest/script also starts its Action. Artifacts are retained for 7 days.
 
-## Pacote isolado `six-github-maven-offline`
+Each artifact ZIP contains a `maven-repository` tarball, its `.sha256`, and `manifest.txt`. Verify the SHA-256 before integrating into a local DevKit. No workflow checks out any private project or uploads secrets.
 
-O workflow `Build six-github Maven offline dependency bundle` produz um ZIP independente para o DevKit offline, preservando o pacote Aquifer existente.
+A green workflow proves only **public dependency resolution and synthetic online/offline smoke tests**. It does **not** prove that the real application builds, that OAuth authenticates, or that external provider/DB tests passed. Those must be run in the relevant private project and QA environment.
 
-A base `pom-six-github.xml` é um manifesto **sintético público**: inclui as coordenadas de JUnit, Testcontainers PostgreSQL, JDBC e plugins de build observadas no POM da branch `agente/andreia` do Six Chess, além de Spring Boot, Spring AI, Flyway, JaCoCo e quality tools já presentes neste builder. Não publica POM privado, fontes ou segredos.
+### Backward compatibility
 
-O workflow executa resolução online e testes Maven reais (incluindo verificação subsequente em modo offline); o sucesso não comprova testes funcionais nos repositórios privados, Docker ou PostgreSQL. O artefato tem validade de 7 dias e seu SHA-256 precisa ser validado antes de integrar o DevKit.
+`pom-six-github-compat.xml` is an archived synthetic compatibility seed, **not used by any current workflow**. Keep it for historical comparison; do not use it to generate new GitHub MCP bundles.

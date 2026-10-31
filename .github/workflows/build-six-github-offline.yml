@@ -1,4 +1,4 @@
-name: Build six-github Maven offline dependency bundle
+name: Build GitHub MCP Maven offline dependency bundle
 
 on:
   workflow_dispatch:

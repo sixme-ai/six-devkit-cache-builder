@@ -1,4 +1,4 @@
-name: Build public Maven offline dependency bundle
+name: Build Aquifer Maven offline dependency bundle
 
 on:
   workflow_dispatch:

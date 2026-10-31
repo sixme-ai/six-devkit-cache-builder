@@ -1,0 +1,44 @@
+name: Build Chess Maven offline dependency bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-six-chess-offline.yml
+      - pom-six-chess.xml
+      - scripts/build-six-chess-cache.sh
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-public-six-chess-offline-bundle
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Chess public Maven cache and offline smoke tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: maven:3.9.16-eclipse-temurin-25
+    steps:
+      - name: Checkout this public cache builder only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build isolated Chess Maven cache
+        shell: bash
+        run: bash scripts/build-six-chess-cache.sh
+
+      - name: Publish Chess public dependency bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: six-chess-maven-offline
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
