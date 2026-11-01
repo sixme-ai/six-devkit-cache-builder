@@ -25,6 +25,20 @@ class OfflineCacheTest {
   @Test void checksJUnit() { assertEquals(4, Seed.twice(2)); }
 }
 JAVA
+# Verify the exact SDK 2.1.0 Servlet sweeper API at compile and test time.
+cat > "$WORKSPACE/src/test/java/dev/offline/cache/McpSweepApiTest.java" <<'JAVA'
+package dev.offline.cache;
+import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
+import java.time.Duration;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+class McpSweepApiTest {
+  @Test void exposesSdkSessionSweeper() {
+    assertNotNull(HttpServletStreamableServerTransportProvider.builder()
+        .sessionSweepInterval(Duration.ofSeconds(3)));
+  }
+}
+JAVA
 cat > "$WORKSPACE/src/test/java/dev/offline/cache/OfflineCacheIT.java" <<'JAVA'
 package dev.offline.cache;
 import org.junit.jupiter.api.Test;
@@ -44,6 +58,10 @@ mvn_seed $PROFILES checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs
 echo "Verifying github-mcp with Maven -o and the SAME repository..."
 mvn_seed -o $PROFILES clean verify
 mvn_seed -o $PROFILES checkstyle:checkstyle pmd:pmd pmd:cpd spotbugs:spotbugs
+for artifact in mcp mcp-core mcp-json-jackson3; do
+  test -s "$REPOSITORY/io/modelcontextprotocol/sdk/$artifact/2.1.0/$artifact-2.1.0.jar" || { echo "Missing canonical SDK $artifact:2.1.0" >&2; exit 3; }
+done
+test -s "$REPOSITORY/io/modelcontextprotocol/sdk/mcp-bom/2.1.0/mcp-bom-2.1.0.pom" || { echo 'Missing canonical SDK mcp-bom:2.1.0' >&2; exit 3; }
 test -s "$REPOSITORY/org/springframework/ai/spring-ai-mcp/2.0.1/spring-ai-mcp-2.0.1.jar" || { echo "Missing org/springframework/ai/spring-ai-mcp/2.0.1/spring-ai-mcp-2.0.1.jar" >&2; exit 3; }
 test -s "$REPOSITORY/org/springframework/ai/mcp-spring-webmvc/2.0.1/mcp-spring-webmvc-2.0.1.jar" || { echo "Missing org/springframework/ai/mcp-spring-webmvc/2.0.1/mcp-spring-webmvc-2.0.1.jar" >&2; exit 3; }
 test -s "$REPOSITORY/org/springframework/boot/spring-boot-starter-security/4.1.1/spring-boot-starter-security-4.1.1.jar" || { echo "Missing org/springframework/boot/spring-boot-starter-security/4.1.1/spring-boot-starter-security-4.1.1.jar" >&2; exit 3; }
@@ -58,6 +76,7 @@ source=public_synthetic_dependency_coordinates_only
 project=github-mcp
 java_major=25
 maven_version=3.9.16
+mcp_sdk_version=2.1.0
 offline_seed_verification=PASS
 private_project_compilation=NOT_TESTED
 external_integrations=NOT_TESTED
