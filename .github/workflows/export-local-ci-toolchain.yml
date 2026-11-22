@@ -1,0 +1,42 @@
+name: Export public Java 25 and Maven 3.9.16 for local CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/export-local-ci-toolchain.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-toolchain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: maven:3.9.16-eclipse-temurin-25
+    steps:
+      - name: Package publicly available toolchain only
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          mvn -version
+          mkdir -p /tmp/toolchain/java /tmp/toolchain/maven dist
+          cp -a "$JAVA_HOME/." /tmp/toolchain/java/
+          MAVEN_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v mvn)")")")"
+          cp -a "$MAVEN_ROOT/." /tmp/toolchain/maven/
+          tar -czf dist/public-java25-maven3916.tar.gz -C /tmp toolchain
+          (cd dist && sha256sum public-java25-maven3916.tar.gz > public-java25-maven3916.tar.gz.sha256)
+          tar -tzf dist/public-java25-maven3916.tar.gz | grep -Fq 'toolchain/java/bin/java'
+          tar -tzf dist/public-java25-maven3916.tar.gz | grep -Fq 'toolchain/maven/bin/mvn'
+
+      - name: Upload temporary public toolchain artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-java25-maven3916
+          path: dist/
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
