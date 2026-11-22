@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   smoke:
@@ -25,6 +26,14 @@ jobs:
           distribution: temurin
           java-version: '25'
 
+      - name: Publish Actions run locator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAYLOAD="$(printf '{\"state\":\"pending\",\"context\":\"maven3102-public-seed\",\"target_url\":\"https://github.com/%s/actions/runs/%s\",\"description\":\"Maven 3.10.2 public seed\"}' "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          curl -fsS -X POST -H 'Accept: application/vnd.github+json' -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$PAYLOAD" >/dev/null
       - name: Download and checksum official Maven 3.10.2
         shell: bash
         run: |
