@@ -29,8 +29,10 @@ jobs:
           cp -a "$MAVEN_ROOT/." /tmp/toolchain/maven/
           tar -czf dist/public-java25-maven3916.tar.gz -C /tmp toolchain
           (cd dist && sha256sum public-java25-maven3916.tar.gz > public-java25-maven3916.tar.gz.sha256)
-          tar -tzf dist/public-java25-maven3916.tar.gz | grep -Fq 'toolchain/java/bin/java'
-          tar -tzf dist/public-java25-maven3916.tar.gz | grep -Fq 'toolchain/maven/bin/mvn'
+          tar -tzf dist/public-java25-maven3916.tar.gz > dist/toolchain-files.txt
+          grep -Fq 'toolchain/java/bin/java' dist/toolchain-files.txt
+          grep -Fq 'toolchain/maven/bin/mvn' dist/toolchain-files.txt
+          rm dist/toolchain-files.txt
 
       - name: Upload temporary public toolchain artifact
         uses: actions/upload-artifact@v4
