@@ -50,7 +50,7 @@ jobs:
           mvn -B -ntp "-Dmaven.repo.local=$REPO" clean verify
           mvn -B -ntp -o "-Dmaven.repo.local=$REPO" clean verify
           test -s "$PROJECT/target/surefire-reports/TEST-dev.offline.ProbeTest.xml"
-          test -s "$PROJECT/target/jacoco.xml"
+          test -s "$PROJECT/target/site/jacoco/jacoco.xml"
           for item in \
             org/apache/maven/plugins/maven-checkstyle-plugin/3.6.0/maven-checkstyle-plugin-3.6.0.jar \
             org/apache/maven/plugins/maven-pmd-plugin/3.28.0/maven-pmd-plugin-3.28.0.jar \
