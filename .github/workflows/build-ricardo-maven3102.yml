@@ -1,0 +1,73 @@
+name: Build Java 25 Maven 3.10.2 public offline seed
+
+on:
+  push:
+    branches: [ricardo]
+    paths:
+      - pom-java25-smoke.xml
+      - .github/workflows/build-ricardo-maven3102.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Resolve official Maven and prove fresh offline cache
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Download and checksum official Maven 3.10.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIST=https://dlcdn.apache.org/maven/maven-3/3.10.2/binaries
+          FILE="$RUNNER_TEMP/apache-maven-3.10.2-bin.tar.gz"
+          curl -fSL --retry 3 "$DIST/apache-maven-3.10.2-bin.tar.gz" -o "$FILE"
+          curl -fSL --retry 3 "$DIST/apache-maven-3.10.2-bin.tar.gz.sha512" -o "$FILE.sha512"
+          EXPECTED="$(awk '{print $1}' "$FILE.sha512")"
+          printf '%s  %s\n' "$EXPECTED" "$FILE" | sha512sum -c -
+          tar -xzf "$FILE" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.10.2/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve exact public plugin graph and test online/offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -version
+          mvn -version | tee maven-version.txt
+          grep -F 'Apache Maven 3.10.2' maven-version.txt
+          REPO="$RUNNER_TEMP/maven-repository"
+          mkdir -p "$REPO" dist
+          mvn -B -ntp "-Dmaven.repo.local=$REPO" -f pom-java25-smoke.xml org.apache.maven.plugins:maven-dependency-plugin:3.9.0:go-offline
+          mvn -B -ntp "-Dmaven.repo.local=$REPO" -f pom-java25-smoke.xml -Pfast clean test
+          mvn -B -ntp "-Dmaven.repo.local=$REPO" -f pom-java25-smoke.xml -Pfull clean verify
+          mvn -B -ntp "-Dmaven.repo.local=$REPO" -f pom-java25-smoke.xml dependency:tree
+          find "$REPO" -name '*.lastUpdated' -type f -delete
+          tar -czf dist/maven-repository.tar.gz -C "$RUNNER_TEMP" maven-repository
+          (cd dist && sha256sum maven-repository.tar.gz > maven-repository.tar.gz.sha256)
+          mkdir -p "$RUNNER_TEMP/verify"
+          tar -xzf dist/maven-repository.tar.gz -C "$RUNNER_TEMP/verify"
+          mvn -B -ntp -o "-Dmaven.repo.local=$RUNNER_TEMP/verify/maven-repository" -f pom-java25-smoke.xml -Pfast clean test
+          mvn -B -ntp -o "-Dmaven.repo.local=$RUNNER_TEMP/verify/maven-repository" -f pom-java25-smoke.xml -Pfull clean verify
+          mvn -B -ntp -o "-Dmaven.repo.local=$RUNNER_TEMP/verify/maven-repository" -f pom-java25-smoke.xml dependency:tree
+          cp "$RUNNER_TEMP/apache-maven-3.10.2-bin.tar.gz" dist/
+          cp "$RUNNER_TEMP/apache-maven-3.10.2-bin.tar.gz.sha512" dist/
+          printf 'source=public_synthetic_only\njava=25\nmaven=3.10.2\noffline_seed=PASS\nprivate_build=NOT_TESTED\n' > dist/manifest.txt
+          (cd dist && sha256sum -c maven-repository.tar.gz.sha256)
+
+      - name: Upload verified Maven distribution and offline repository
+        uses: actions/upload-artifact@v4
+        with:
+          name: java25-maven3102-offline
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
