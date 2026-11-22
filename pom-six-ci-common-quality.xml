@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion><groupId>dev.offline.cache</groupId>
+  <artifactId>public-ci-quality-seed</artifactId><version>1.0.0</version>
+  <properties><maven.compiler.release>25</maven.compiler.release></properties>
+  <dependencies><dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>6.1.2</version><scope>test</scope></dependency></dependencies>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>3.5.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.15.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.5.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.5.1</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-install-plugin</artifactId><version>3.1.4</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-failsafe-plugin</artifactId><version>3.6.0</version><executions><execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution></executions></plugin>
+    <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.15</version><executions>
+      <execution><id>jacoco-agent</id><goals><goal>prepare-agent</goal></goals></execution>
+      <execution><id>jacoco-report</id><phase>verify</phase><goals><goal>report</goal></goals></execution>
+    </executions></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-checkstyle-plugin</artifactId><version>3.6.0</version>
+      <configuration><configLocation>sun_checks.xml</configLocation><failsOnError>false</failsOnError><failOnViolation>false</failOnViolation></configuration>
+      <dependencies><dependency><groupId>com.puppycrawl.tools</groupId><artifactId>checkstyle</artifactId><version>14.3.0</version></dependency></dependencies>
+      <executions><execution><id>verify-checkstyle</id><phase>verify</phase><goals><goal>check</goal></goals></execution></executions>
+    </plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-pmd-plugin</artifactId><version>3.28.0</version>
+      <configuration><targetJdk>25</targetJdk><failOnViolation>false</failOnViolation></configuration>
+      <executions><execution><id>verify-pmd</id><phase>verify</phase><goals><goal>check</goal><goal>cpd-check</goal></goals></execution></executions>
+    </plugin>
+    <plugin><groupId>com.github.spotbugs</groupId><artifactId>spotbugs-maven-plugin</artifactId><version>4.10.5.0</version>
+      <configuration><effort>Max</effort><threshold>Low</threshold><xmlOutput>true</xmlOutput><failOnError>false</failOnError></configuration>
+      <executions><execution><id>verify-spotbugs</id><phase>verify</phase><goals><goal>check</goal></goals></execution></executions>
+    </plugin>
+  </plugins></build>
+</project>

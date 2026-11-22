@@ -1,0 +1,75 @@
+name: Build public CI quality Maven dependencies
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-six-ci-common-quality.yml
+      - pom-six-ci-common-quality.xml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-public-cache:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: maven:3.9.16-eclipse-temurin-25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Resolve and run synthetic public CI quality tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMP="$(mktemp -d)"
+          REPO="$TMP/repository"
+          PROJECT="$TMP/synthetic"
+          mkdir -p "$REPO" "$PROJECT/src/main/java/dev/offline" "$PROJECT/src/test/java/dev/offline" dist
+          cp pom-six-ci-common-quality.xml "$PROJECT/pom.xml"
+          cat > "$PROJECT/src/main/java/dev/offline/Probe.java" <<'JAVA'
+          package dev.offline;
+          public final class Probe {
+              private Probe() {}
+              public static int add(final int a, final int b) { return a + b; }
+          }
+          JAVA
+          cat > "$PROJECT/src/test/java/dev/offline/ProbeTest.java" <<'JAVA'
+          package dev.offline;
+          import org.junit.jupiter.api.Test;
+          import static org.junit.jupiter.api.Assertions.assertEquals;
+          class ProbeTest {
+              @Test void checkAdd() { assertEquals(3, Probe.add(1, 2)); }
+          }
+          JAVA
+          cd "$PROJECT"
+          mvn -B -ntp -U "-Dmaven.repo.local=$REPO" org.apache.maven.plugins:maven-dependency-plugin:3.9.0:go-offline
+          mvn -B -ntp "-Dmaven.repo.local=$REPO" clean verify
+          mvn -B -ntp -o "-Dmaven.repo.local=$REPO" clean verify
+          test -s "$PROJECT/target/surefire-reports/TEST-dev.offline.ProbeTest.xml"
+          test -s "$PROJECT/target/jacoco.xml"
+          for item in \
+            org/apache/maven/plugins/maven-checkstyle-plugin/3.6.0/maven-checkstyle-plugin-3.6.0.jar \
+            org/apache/maven/plugins/maven-pmd-plugin/3.28.0/maven-pmd-plugin-3.28.0.jar \
+            com/github/spotbugs/spotbugs-maven-plugin/4.10.5.0/spotbugs-maven-plugin-4.10.5.0.jar \
+            org/jacoco/jacoco-maven-plugin/0.8.15/jacoco-maven-plugin-0.8.15.jar \
+            org/apache/maven/plugins/maven-failsafe-plugin/3.6.0/maven-failsafe-plugin-3.6.0.jar; do
+              test -s "$REPO/$item"
+          done
+          find "$REPO" -type f -name '*.lastUpdated' -delete
+          tar -czf "$GITHUB_WORKSPACE/dist/six-ci-common-quality-offline.tar.gz" -C "$TMP" repository
+          (cd "$GITHUB_WORKSPACE/dist" && sha256sum six-ci-common-quality-offline.tar.gz > six-ci-common-quality-offline.tar.gz.sha256)
+          mkdir -p "$TMP/extracted"
+          tar -xzf "$GITHUB_WORKSPACE/dist/six-ci-common-quality-offline.tar.gz" -C "$TMP/extracted"
+          mvn -B -ntp -o "-Dmaven.repo.local=$TMP/extracted/repository" clean verify
+          printf 'public-only=true\njava=25\nmaven=3.9.16\noffline-verify=pass\n' > "$GITHUB_WORKSPACE/dist/manifest.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: six-ci-common-quality-offline
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
