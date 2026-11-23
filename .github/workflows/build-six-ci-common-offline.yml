@@ -30,7 +30,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Verify Java 25, Maven 3.9.16 and synthetic cache
+      - name: Install official Maven 3.10.2 with SHA-512 verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://dlcdn.apache.org/maven/maven-3/3.10.2/binaries"
+          ARCHIVE="$RUNNER_TEMP/apache-maven-3.10.2-bin.tar.gz"
+          curl -fsSL --retry 3 "$BASE/apache-maven-3.10.2-bin.tar.gz" -o "$ARCHIVE"
+          curl -fsSL --retry 3 "$BASE/apache-maven-3.10.2-bin.tar.gz.sha512" -o "$ARCHIVE.sha512"
+          expected="$(awk '{print $1}' "$ARCHIVE.sha512")"
+          printf '%s  %s\n' "$expected" "$ARCHIVE" | sha512sum -c -
+          tar -xzf "$ARCHIVE" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-3.10.2/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Java 25, Maven 3.10.2 and synthetic cache
         shell: bash
         run: bash scripts/build-six-ci-common-cache.sh
 
